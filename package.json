@@ -1,0 +1,38 @@
+{
+  "name": "explain-diff",
+  "version": "0.1.0",
+  "description": "Literate diff explainers with quizzes, built for terminal coding agents",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "explain-diff": "dist/cli/main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm build:cli && pnpm build:viewer",
+    "build:cli": "tsc -p tsconfig.cli.json",
+    "build:viewer": "vite build",
+    "dev:viewer": "vite",
+    "typecheck": "tsc -p tsconfig.cli.json --noEmit && tsc -p tsconfig.viewer.json"
+  },
+  "dependencies": {
+    "@pierre/diffs": "^1.2.12",
+    "commander": "^15.0.0",
+    "marked": "^18.0.6",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "playwright-core": "^1.61.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.4"
+  }
+}

@@ -1,0 +1,544 @@
+/* explain-diff viewer — a literate document, not a dashboard. */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #fdfdfc;
+  --bg-raised: #f4f4f2;
+  --ink: #1a1a1a;
+  --ink-muted: #5f5f5c;
+  --rule: #e3e3df;
+  --accent: #29527a;
+  --good: #1a7f37;
+  --good-bg: #eaf5ec;
+  --bad: #b42318;
+  --bad-bg: #fbeae9;
+  --add: #1a7f37;
+  --del: #b42318;
+
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --measure: 44rem;
+  --wide: 60rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191a1c;
+    --bg-raised: #212327;
+    --ink: #e6e4df;
+    --ink-muted: #9a988f;
+    --rule: #33353a;
+    --accent: #8fb4d9;
+    --good: #4cc38a;
+    --good-bg: #17281e;
+    --bad: #f2837a;
+    --bad-bg: #2e1c1a;
+    --add: #4cc38a;
+    --del: #f2837a;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------------------------------------------------------------- masthead */
+
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule);
+}
+
+.masthead-nav {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 0.6rem 1.5rem;
+  display: flex;
+  gap: 1.5rem;
+  font-family: var(--sans);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.masthead-nav a {
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.masthead-nav a:hover {
+  color: var(--ink);
+}
+
+/* -------------------------------------------------------------------- page */
+
+.page {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 2rem 1.5rem 6rem;
+}
+
+.page > section {
+  scroll-margin-top: 4rem;
+}
+
+.title-block {
+  max-width: var(--measure);
+  margin: 2rem auto 3rem;
+}
+
+.title-block h1 {
+  font-size: 2.125rem;
+  line-height: 1.2;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+.change-meta {
+  font-family: var(--sans);
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.section-heading {
+  max-width: var(--measure);
+  margin: 4rem auto 1.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--rule);
+  font-size: 1.5rem;
+}
+
+.additions {
+  color: var(--add);
+}
+
+.deletions {
+  color: var(--del);
+}
+
+/* ------------------------------------------------------------------- prose */
+
+.prose {
+  max-width: var(--measure);
+  margin: 0 auto;
+}
+
+.prose h2 {
+  font-size: 1.5rem;
+  margin: 2.5rem 0 0.75rem;
+}
+
+.prose h3 {
+  font-size: 1.1875rem;
+  margin: 2rem 0 0.5rem;
+}
+
+.prose p {
+  margin: 0 0 1.1rem;
+}
+
+.prose a {
+  color: var(--accent);
+}
+
+.prose code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--bg-raised);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+.prose pre {
+  background: var(--bg-raised);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.prose pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.prose blockquote {
+  margin: 1.25rem 0;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid var(--rule);
+  background: var(--bg-raised);
+  border-radius: 8px;
+  font-size: 0.9375rem;
+}
+
+.prose blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.5rem;
+  margin: 0 0 1.1rem;
+}
+
+.prose table {
+  border-collapse: collapse;
+  font-family: var(--sans);
+  font-size: 0.875rem;
+  margin: 1.25rem 0;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--rule);
+  padding: 0.4rem 0.75rem;
+  text-align: left;
+}
+
+.prose th {
+  background: var(--bg-raised);
+}
+
+/* --------------------------------------------------- embedded hunks/figures */
+
+.embedded-hunk,
+.embedded-figure {
+  max-width: var(--wide);
+  margin: 1.75rem auto;
+}
+
+.embedded-hunk {
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 0.8125rem;
+}
+
+.embedded-figure iframe {
+  width: 100%;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--bg-raised);
+}
+
+figcaption {
+  font-family: var(--sans);
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+/* -------------------------------------------------------------------- quiz */
+
+.quiz {
+  max-width: var(--measure);
+  margin: 0 auto;
+  font-family: var(--sans);
+}
+
+.quiz-card {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  background: var(--bg-raised);
+}
+
+.quiz-prompt {
+  display: flex;
+  gap: 0.9rem;
+  align-items: baseline;
+  margin-bottom: 1rem;
+}
+
+.quiz-prompt .prose {
+  font-family: var(--serif);
+  /* Flex item: auto margins would center it; keep prompts left-aligned. */
+  margin: 0;
+  flex: 1;
+}
+
+.quiz-prompt .prose p {
+  margin-bottom: 0.4rem;
+}
+
+.quiz-number {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  display: grid;
+  place-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.quiz-options {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.quiz-option {
+  font: inherit;
+  font-size: 0.9375rem;
+  text-align: left;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.quiz-option:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.quiz-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.quiz-option:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+/* Correctness is signaled by glyph + border + tint — never color alone. */
+.quiz-option.is-correct {
+  border-color: var(--good);
+  background: var(--good-bg);
+  opacity: 1;
+}
+
+.quiz-option.is-correct .quiz-option-text::before {
+  content: '✓  ';
+  font-weight: 700;
+  color: var(--good);
+}
+
+.quiz-option.is-incorrect {
+  border-color: var(--bad);
+  background: var(--bad-bg);
+  opacity: 1;
+}
+
+.quiz-option.is-incorrect .quiz-option-text::before {
+  content: '✗  ';
+  font-weight: 700;
+  color: var(--bad);
+}
+
+.quiz-option-why {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.quiz-explanation {
+  font-size: 0.9375rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px dashed var(--rule);
+}
+
+.quiz-free {
+  width: 100%;
+  font: inherit;
+  font-size: 0.9375rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  resize: vertical;
+}
+
+.quiz-free:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.quiz-submit {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.quiz-submit button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+}
+
+.quiz-submit button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.quiz-submit button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.quiz-hint {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.quiz-result {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  border: 1px solid var(--good);
+  background: var(--good-bg);
+  font-size: 0.9375rem;
+}
+
+/* ---------------------------------------------------------------- appendix */
+
+.appendix {
+  max-width: var(--wide);
+  margin: 0 auto;
+  font-family: var(--sans);
+}
+
+.appendix-file {
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.appendix-file summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  background: var(--bg-raised);
+  font-size: 0.875rem;
+}
+
+.appendix-file summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.appendix-file[open] summary {
+  border-bottom: 1px solid var(--rule);
+}
+
+.appendix-path {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+}
+
+.file-status {
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  color: var(--ink-muted);
+}
+
+.file-status-added {
+  color: var(--good);
+  border-color: var(--good);
+}
+
+.file-status-deleted {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+
+.file-counts {
+  margin-left: auto;
+  font-size: 0.8125rem;
+}
+
+.appendix-file .diffs,
+.appendix-file [data-diffs] {
+  font-size: 0.8125rem;
+}
+
+.appendix-binary {
+  padding: 1rem;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+/* ---------------------------------------------------------- compile errors */
+
+.compile-errors {
+  max-width: var(--measure);
+  margin: 4rem auto;
+  font-family: var(--sans);
+}
+
+.compile-errors h1 {
+  font-family: var(--serif);
+}
+
+.compile-errors ul {
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 1.25rem;
+}
+
+.compile-errors code {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  background: var(--bg-raised);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 1rem;
+  }
+
+  .page {
+    padding: 1rem 1rem 4rem;
+  }
+
+  .title-block h1 {
+    font-size: 1.625rem;
+  }
+}
