@@ -28,7 +28,7 @@ Sessions accumulate in a global per-repo archive — the durable trace of "what 
 docs/
   README.md          # this file — intention and map
   architecture.md    # the design: seam, session data model, modules, invariants, decisions
-skill/
+skills/
   explain-diff/      # the Claude Code skill that drives the CLI
 ```
 

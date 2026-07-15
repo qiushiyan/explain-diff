@@ -42,7 +42,7 @@ src/cli/
 src/viewer/     # walkthrough blocks · quiz · appendix (tree + split diffs)
 src/shared/
   payload.ts    # the contract
-skill/
+skills/
   explain-diff/ # the Claude Code skill; authors judgment, defers syntax to the templates
 ```
 

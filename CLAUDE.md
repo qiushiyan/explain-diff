@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`explain-diff` turns a branch's changes into a served, interactive explainer: a model-authored literate walkthrough with real diff hunks spliced in, a quiz whose transcript flows back to the coding agent, and a full-diff appendix. A Claude Code skill (`skill/explain-diff/SKILL.md`, symlinked to `~/.claude/skills/explain-diff`) drives the CLI; the CLI owns everything deterministic so the model authors only prose (`walkthrough.md`) and questions (`quiz.yaml`).
+`explain-diff` turns a branch's changes into a served, interactive explainer: a model-authored literate walkthrough with real diff hunks spliced in, a quiz whose transcript flows back to the coding agent, and a full-diff appendix. A Claude Code skill (`skills/explain-diff/SKILL.md`, Skills-CLI-compatible layout) drives the CLI; the CLI owns everything deterministic so the model authors only prose (`walkthrough.md`) and questions (`quiz.yaml`).
 
 ## Commands
 

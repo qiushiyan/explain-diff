@@ -3,6 +3,25 @@
   "version": "0.1.0",
   "description": "Literate diff explainers with quizzes, built for terminal coding agents",
   "license": "MIT",
+  "author": "qiushiyan",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qiushiyan/explain-diff.git"
+  },
+  "homepage": "https://github.com/qiushiyan/explain-diff#readme",
+  "bugs": "https://github.com/qiushiyan/explain-diff/issues",
+  "keywords": [
+    "diff",
+    "code-review",
+    "claude-code",
+    "coding-agent",
+    "skill",
+    "quiz",
+    "literate"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "bin": {
     "explain-diff": "dist/cli/main.js"
@@ -15,7 +34,8 @@
     "build:cli": "tsc -p tsconfig.cli.json",
     "build:viewer": "vite build",
     "dev:viewer": "vite",
-    "typecheck": "tsc -p tsconfig.cli.json --noEmit && tsc -p tsconfig.viewer.json"
+    "typecheck": "tsc -p tsconfig.cli.json --noEmit && tsc -p tsconfig.viewer.json",
+    "prepublishOnly": "pnpm typecheck && pnpm build"
   },
   "dependencies": {
     "@pierre/diffs": "^1.2.12",
