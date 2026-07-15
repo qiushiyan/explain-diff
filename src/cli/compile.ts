@@ -12,10 +12,10 @@
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join, normalize } from 'node:path'
-import { marked } from 'marked'
+import { marked, Marked } from 'marked'
 import { parse as parseYaml } from 'yaml'
 import { z } from 'zod'
-import type { Block, QuizOption, QuizQuestion, SessionPayload } from '../shared/payload.js'
+import type { Block, QuizOption, QuizQuestion, SessionPayload, TocEntry } from '../shared/payload.js'
 import { readFiles, readManifest, type SessionPaths } from './session.js'
 
 export interface CompileError {
@@ -166,7 +166,10 @@ function segmentWalkthrough(source: string): Segment[] {
   return segments
 }
 
-/** `path#L10-L40 "caption" height=360` → parts. Quotes only around caption. */
+/**
+ * `path#L10-L40 "caption" height=360 collapsed` → parts. Quotes only around
+ * the caption; bare words become boolean flags.
+ */
 function parseDirectiveArgs(rest: string): { target: string; caption?: string; attrs: Map<string, string> } {
   const attrs = new Map<string, string>()
   let caption: string | undefined
@@ -178,8 +181,35 @@ function parseDirectiveArgs(rest: string): { target: string; caption?: string; a
   for (const token of tokens.slice(1)) {
     const eq = token.indexOf('=')
     if (eq > 0) attrs.set(token.slice(0, eq), token.slice(eq + 1))
+    else attrs.set(token, 'true')
   }
   return { target, ...(caption !== undefined ? { caption } : {}), attrs }
+}
+
+/**
+ * A Marked instance whose heading renderer assigns stable ids and records
+ * h2/h3 entries into the ToC. Per-compile state, so ids stay deduplicated
+ * across prose blocks without leaking between sessions.
+ */
+function createProseRenderer(toc: TocEntry[]): Marked {
+  const slugCounts = new Map<string, number>()
+  const instance = new Marked()
+  instance.use({
+    renderer: {
+      heading({ tokens, depth }) {
+        const html = this.parser.parseInline(tokens)
+        const text = html.replaceAll(/<[^>]+>/g, '').trim()
+        const base =
+          text.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-').replaceAll(/^-+|-+$/g, '') || 'section'
+        const count = slugCounts.get(base) ?? 0
+        slugCounts.set(base, count + 1)
+        const id = count === 0 ? base : `${base}-${count + 1}`
+        if (depth === 2 || depth === 3) toc.push({ id, text, depth })
+        return `<h${depth} id="${id}">${html}</h${depth}>\n`
+      },
+    },
+  })
+  return instance
 }
 
 function md(source: string): string {
@@ -193,12 +223,15 @@ function mdInline(source: string): string {
 interface WalkthroughResult {
   title: string | null
   blocks: Block[]
+  toc: TocEntry[]
   errors: CompileError[]
 }
 
 function compileWalkthrough(source: string, patchFiles: PatchFile[], paths: SessionPaths): WalkthroughResult {
   const errors: CompileError[] = []
   const blocks: Block[] = []
+  const toc: TocEntry[] = []
+  const prose = createProseRenderer(toc)
   let title: string | null = null
 
   const withoutComments = source.replaceAll(/<!--[\s\S]*?-->/g, '')
@@ -206,6 +239,7 @@ function compileWalkthrough(source: string, patchFiles: PatchFile[], paths: Sess
     return {
       title: null,
       blocks: [],
+      toc: [],
       errors: [{ file: 'walkthrough.md', message: 'walkthrough.md has not been written yet' }],
     }
   }
@@ -227,7 +261,7 @@ function compileWalkthrough(source: string, patchFiles: PatchFile[], paths: Sess
           text = text.replace(/^# .+$/m, '')
         }
       }
-      if (text.trim()) blocks.push({ kind: 'prose', html: md(text) })
+      if (text.trim()) blocks.push({ kind: 'prose', html: prose.parse(text, { async: false }) })
       continue
     }
 
@@ -262,7 +296,16 @@ function compileWalkthrough(source: string, patchFiles: PatchFile[], paths: Sess
         )
         continue
       }
-      blocks.push({ kind: 'hunk', file: file.path, patch: slice, ...(caption !== undefined ? { caption } : {}) })
+      // `collapsed` / `open` flags override the viewer's length-based default.
+      const collapsed = attrs.has('collapsed') ? true : attrs.has('open') ? false : undefined
+      blocks.push({
+        kind: 'hunk',
+        file: file.path,
+        patch: slice,
+        lines: slice.split('\n').length,
+        ...(caption !== undefined ? { caption } : {}),
+        ...(collapsed !== undefined ? { collapsed } : {}),
+      })
     } else if (name === 'figure') {
       const normalized = normalize(target)
       if (!normalized.startsWith('figures/') || normalized.includes('..')) {
@@ -289,7 +332,7 @@ function compileWalkthrough(source: string, patchFiles: PatchFile[], paths: Sess
     }
   }
 
-  return { title, blocks, errors }
+  return { title, blocks, toc, errors }
 }
 
 // ---------------------------------------------------------------------------
@@ -419,7 +462,7 @@ export function compileSession(paths: SessionPaths): CompileResult {
   const quizSource = readFileSync(paths.quiz, 'utf8')
 
   const patchFiles = parsePatch(patch)
-  const { title, blocks, errors: wErrors } = compileWalkthrough(walkthroughSource, patchFiles, paths)
+  const { title, blocks, toc, errors: wErrors } = compileWalkthrough(walkthroughSource, patchFiles, paths)
   const { quiz, errors: qErrors } = compileQuiz(quizSource, manifest.createdAt + manifest.branch)
 
   const errors = [...wErrors, ...qErrors]
@@ -431,6 +474,7 @@ export function compileSession(paths: SessionPaths): CompileResult {
       manifest,
       title: title ?? manifest.branch,
       walkthrough: blocks,
+      toc,
       quiz,
       files,
       patch,

@@ -3,6 +3,7 @@ import type { SessionPayload, Transcript } from '@shared/payload'
 import { Blocks } from './Blocks'
 import { Quiz } from './Quiz'
 import { Appendix } from './Appendix'
+import { Toc } from './Toc'
 
 interface CompileErrorWire {
   file: string
@@ -79,7 +80,10 @@ export function App() {
   const deletions = payload.files.reduce((n, f) => n + f.deletions, 0)
 
   return (
-    <>
+    <div className="layout">
+      {/* ?? []: a server running an older CLI serves payloads without toc. */}
+      <Toc toc={payload.toc ?? []} hasQuiz={payload.quiz.length > 0} />
+      <div className="content-col">
       <header className="masthead">
         <nav className="masthead-nav">
           <a href="#walkthrough">Walkthrough</a>
@@ -116,6 +120,7 @@ export function App() {
           <Appendix files={payload.files} patch={payload.patch} />
         </section>
       </main>
-    </>
+      </div>
+    </div>
   )
 }

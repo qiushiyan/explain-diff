@@ -59,6 +59,8 @@ Literate walkthrough. Plain markdown, plus two directives on their own lines:
   :::hunk path/to/file.ts#L10-L40 "optional caption"
       Splices the real rendered hunks overlapping new-file lines 10-40.
       Omit #L10-L40 to include the file's whole diff.
+      Long hunks auto-collapse in the page; force with a trailing
+      \`collapsed\` or \`open\` flag.
 
   :::figure figures/name.html "optional caption" height=360
       Embeds an interactive HTML figure from this session's figures/ dir.

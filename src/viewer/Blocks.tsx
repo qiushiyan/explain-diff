@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { PatchDiff } from '@pierre/diffs/react'
 import type { Block } from '@shared/payload'
 
@@ -6,6 +7,9 @@ const DIFF_OPTIONS = {
   themeType: 'system',
   overflow: 'wrap',
 } as const
+
+/** Hunks longer than this start collapsed unless the author says otherwise. */
+const AUTO_COLLAPSE_LINES = 48
 
 /**
  * The literate walkthrough: prose interleaved with real rendered hunks and
@@ -20,12 +24,7 @@ export function Blocks({ blocks }: { blocks: Block[] }) {
           case 'prose':
             return <div key={i} className="prose" dangerouslySetInnerHTML={{ __html: block.html }} />
           case 'hunk':
-            return (
-              <figure key={i} className="embedded-hunk">
-                <PatchDiff patch={block.patch} options={DIFF_OPTIONS} />
-                {block.caption && <figcaption>{block.caption}</figcaption>}
-              </figure>
-            )
+            return <HunkBlock key={i} block={block} />
           case 'figure':
             return (
               <figure key={i} className="embedded-figure">
@@ -41,5 +40,23 @@ export function Blocks({ blocks }: { blocks: Block[] }) {
         }
       })}
     </>
+  )
+}
+
+/**
+ * An in-walkthrough hunk. Long slices start collapsed (the library's
+ * `collapsed` option renders just the file header) with our toggle beneath —
+ * the narrative stays skimmable, the code one click away.
+ */
+function HunkBlock({ block }: { block: Extract<Block, { kind: 'hunk' }> }) {
+  const [collapsed, setCollapsed] = useState(block.collapsed ?? block.lines > AUTO_COLLAPSE_LINES)
+  return (
+    <figure className="embedded-hunk">
+      <PatchDiff patch={block.patch} options={{ ...DIFF_OPTIONS, collapsed }} />
+      <button type="button" className="hunk-toggle" onClick={() => setCollapsed((c) => !c)}>
+        {collapsed ? `Show diff · ${block.lines} lines` : 'Collapse diff'}
+      </button>
+      {block.caption && <figcaption>{block.caption}</figcaption>}
+    </figure>
   )
 }

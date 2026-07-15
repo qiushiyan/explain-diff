@@ -46,8 +46,25 @@ export interface FileSummary {
  */
 export type Block =
   | { kind: 'prose'; html: string }
-  | { kind: 'hunk'; file: string; patch: string; caption?: string }
+  | {
+      kind: 'hunk'
+      file: string
+      patch: string
+      caption?: string
+      /** Patch-slice line count; the viewer auto-collapses long hunks. */
+      lines: number
+      /** Author override via `collapsed` / `open` directive flags. */
+      collapsed?: boolean
+    }
   | { kind: 'figure'; src: string; caption?: string; height?: number }
+
+/** Walkthrough section headings, in document order, for the viewer's ToC. */
+export interface TocEntry {
+  id: string
+  text: string
+  /** 2 = section, 3 = subsection. */
+  depth: 2 | 3
+}
 
 export interface QuizOption {
   id: string
@@ -82,6 +99,7 @@ export interface SessionPayload {
   /** First h1 of walkthrough.md, else branch name. */
   title: string
   walkthrough: Block[]
+  toc: TocEntry[]
   quiz: QuizQuestion[]
   /** Per-file summaries for the appendix header and hunk-directive errors. */
   files: FileSummary[]
