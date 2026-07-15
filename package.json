@@ -35,6 +35,7 @@
     "build:viewer": "vite build",
     "dev:viewer": "vite",
     "typecheck": "tsc -p tsconfig.cli.json --noEmit && tsc -p tsconfig.viewer.json",
+    "link:global": "pnpm add -g link:.",
     "prepublishOnly": "pnpm typecheck && pnpm build"
   },
   "dependencies": {
