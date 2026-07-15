@@ -39,6 +39,7 @@ Reach for a `:::figure` when intuition needs manipulation rather than prose — 
 
 Overwrite the scaffolded `quiz.yaml` (schema documented inside it): five questions — four `mcq`, one `free`.
 
+- Aim every question at the change's **load-bearing** mental model: for a behavior change, the new behavior and why it changed; for an architectural change, the design that carries it. Internals earn a question only when the change cannot be understood without them.
 - Ask about behavior, causality, contracts, edge cases, trade-offs — answerable from understanding, never from matching a phrase in the page.
 - Every distractor is a **misconception** a hurried reader would actually hold, with an explanation of why it tempts and why it fails.
 - Keep options comparable in length, grammar, specificity, and confidence.

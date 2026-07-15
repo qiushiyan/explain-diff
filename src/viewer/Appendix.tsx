@@ -1,20 +1,36 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { PatchDiff } from '@pierre/diffs/react'
+import { FileTree, useFileTree } from '@pierre/trees/react'
 import type { FileSummary } from '@shared/payload'
 
-const DIFF_OPTIONS = {
+const SPLIT_OPTIONS = {
+  diffStyle: 'split',
+  themeType: 'system',
+  overflow: 'wrap',
+} as const
+
+const UNIFIED_OPTIONS = {
   diffStyle: 'unified',
   themeType: 'system',
   overflow: 'wrap',
 } as const
 
-/**
- * The raw material, demoted to an appendix: every file's diff, deterministic
- * and complete, for when the narrative isn't enough.
- */
-export function Appendix({ files, patch }: { files: FileSummary[]; patch: string }) {
-  // Split the multi-file patch into per-file patches; each renders on demand.
-  const slices = useMemo(() => {
+const WIDE_QUERY = '(min-width: 1100px)'
+
+function useWide(): boolean {
+  const [wide, setWide] = useState(() => window.matchMedia(WIDE_QUERY).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(WIDE_QUERY)
+    const onChange = () => setWide(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return wide
+}
+
+/** Splits the captured multi-file patch into per-file patches, keyed by path. */
+function usePatchSlices(patch: string): Map<string, string> {
+  return useMemo(() => {
     const chunks = patch.split(/^(?=diff --git )/m).filter((c) => c.startsWith('diff --git '))
     const byPath = new Map<string, string>()
     for (const chunk of chunks) {
@@ -26,11 +42,76 @@ export function Appendix({ files, patch }: { files: FileSummary[]; patch: string
     }
     return byPath
   }, [patch])
+}
 
+function sliceFor(slices: Map<string, string>, file: FileSummary): string | undefined {
+  return slices.get(file.path) ?? (file.prevPath ? slices.get(file.prevPath) : undefined)
+}
+
+/**
+ * The raw material, demoted to an appendix. Wide screens: a file-tree
+ * navigator beside side-by-side diffs — selecting a file scrolls it into
+ * view. Narrow screens: stacked unified diffs.
+ */
+export function Appendix({ files, patch }: { files: FileSummary[]; patch: string }) {
+  const slices = usePatchSlices(patch)
+  return useWide() ? (
+    <WideAppendix files={files} slices={slices} />
+  ) : (
+    <NarrowAppendix files={files} slices={slices} />
+  )
+}
+
+function WideAppendix({ files, slices }: { files: FileSummary[]; slices: Map<string, string> }) {
+  const sections = useRef(new Map<string, HTMLElement>())
+  const { model } = useFileTree({
+    paths: files.map((f) => f.path),
+    gitStatus: files.map((f) => ({ path: f.path, status: f.status })),
+    initialExpansion: 'open',
+    flattenEmptyDirectories: true,
+    onSelectionChange: (paths) => {
+      const path = paths[0]
+      if (path) sections.current.get(path)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    },
+  })
+
+  return (
+    <div className="appendix-wide">
+      <aside className="appendix-tree" aria-label="changed files">
+        <FileTree model={model} />
+      </aside>
+      <div className="appendix-diffs">
+        {files.map((file) => {
+          const slice = sliceFor(slices, file)
+          return (
+            <section
+              key={file.path}
+              className="appendix-diff-section"
+              ref={(el) => {
+                if (el) sections.current.set(file.path, el)
+                else sections.current.delete(file.path)
+              }}
+            >
+              {file.binary ? (
+                <BinaryNote file={file} />
+              ) : slice ? (
+                <PatchDiff patch={slice} options={SPLIT_OPTIONS} />
+              ) : (
+                <RenameNote file={file} />
+              )}
+            </section>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function NarrowAppendix({ files, slices }: { files: FileSummary[]; slices: Map<string, string> }) {
   return (
     <div className="appendix">
       {files.map((file) => {
-        const slice = slices.get(file.path) ?? (file.prevPath ? slices.get(file.prevPath) : undefined)
+        const slice = sliceFor(slices, file)
         return (
           <details key={file.path} className="appendix-file" open={files.length <= 4}>
             <summary>
@@ -47,15 +128,34 @@ export function Appendix({ files, patch }: { files: FileSummary[]; patch: string
               )}
             </summary>
             {file.binary ? (
-              <p className="appendix-binary">Binary file — no textual diff.</p>
+              <BinaryNote file={file} />
             ) : slice ? (
-              <PatchDiff patch={slice} options={DIFF_OPTIONS} />
+              <PatchDiff patch={slice} options={UNIFIED_OPTIONS} />
             ) : (
-              <p className="appendix-binary">No content changes (rename or mode change).</p>
+              <RenameNote file={file} />
             )}
           </details>
         )
       })}
     </div>
+  )
+}
+
+function BinaryNote({ file }: { file: FileSummary }) {
+  return (
+    <p className="appendix-note">
+      <code className="appendix-path">{file.path}</code> — binary file, no textual diff.
+    </p>
+  )
+}
+
+function RenameNote({ file }: { file: FileSummary }) {
+  return (
+    <p className="appendix-note">
+      <code className="appendix-path">
+        {file.prevPath} → {file.path}
+      </code>{' '}
+      — no content changes (rename or mode change).
+    </p>
   )
 }

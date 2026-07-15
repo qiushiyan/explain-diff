@@ -429,6 +429,52 @@ figcaption {
 
 /* ---------------------------------------------------------------- appendix */
 
+/* Wide screens: file-tree navigator + side-by-side diffs, breaking out of
+   the document measure to use the viewport. */
+.appendix-wide {
+  --appendix-width: min(96rem, calc(100vw - 3rem));
+  width: var(--appendix-width);
+  margin-left: calc((100% - var(--appendix-width)) / 2);
+  display: grid;
+  grid-template-columns: 16rem minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+  font-family: var(--sans);
+}
+
+.appendix-tree {
+  position: sticky;
+  top: 3.5rem;
+  /* The tree is virtualized: it renders rows only within an explicit height. */
+  height: calc(100vh - 5rem);
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 0.375rem;
+  background: var(--bg-raised);
+}
+
+.appendix-tree > * {
+  display: block;
+  height: 100%;
+}
+
+.appendix-diff-section {
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  scroll-margin-top: 3.5rem;
+  font-size: 0.8125rem;
+}
+
+.appendix-note {
+  padding: 1rem;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
 .appendix {
   max-width: var(--wide);
   margin: 0 auto;
@@ -494,13 +540,6 @@ figcaption {
 .appendix-file .diffs,
 .appendix-file [data-diffs] {
   font-size: 0.8125rem;
-}
-
-.appendix-binary {
-  padding: 1rem;
-  margin: 0;
-  color: var(--ink-muted);
-  font-size: 0.875rem;
 }
 
 /* ---------------------------------------------------------- compile errors */

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SessionPayload, Transcript } from '@shared/payload'
 import { Blocks } from './Blocks'
 import { Quiz } from './Quiz'
@@ -35,6 +35,20 @@ export function App() {
     }
     return () => events.close()
   }, [refetch])
+
+  // The page arrives empty and fills in after the payload fetch, which would
+  // otherwise strand a #hash navigation at the top.
+  const restoredHash = useRef(false)
+  useEffect(() => {
+    if (result?.ok && !restoredHash.current && location.hash) {
+      restoredHash.current = true
+      const scroll = () => document.getElementById(location.hash.slice(1))?.scrollIntoView()
+      scroll()
+      // Diffs above the anchor render asynchronously and shift the layout;
+      // re-anchor once they've settled.
+      setTimeout(scroll, 1200)
+    }
+  }, [result])
 
   if (result === null) return null
 
